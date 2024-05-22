@@ -1,23 +1,18 @@
-using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Jobs;
 using UnityEngine.Playables;
-using UnityEngine.Splines;
 using UnityEngine.Timeline;
 
 namespace Sketch {
 
 [ExecuteInEditMode]
-public sealed class ChainRenderer
+public sealed class SweepRenderer
   : MonoBehaviour, ITimeControl, IPropertyPreview
 {
     #region Editable properties
 
     [field:SerializeField]
-    public SplineContainer Spline { get; set; }
-
-    [field:SerializeField]
-    public ChainConfig Config { get; set; } = ChainConfig.Default();
+    public SweepConfig Config { get; set; } = SweepConfig.Default();
 
     [field:SerializeField]
     public Mesh[] Meshes { get; set; }
@@ -35,15 +30,9 @@ public sealed class ChainRenderer
     InstancePool _pool;
 
     void UpdateXforms()
-     => new ChainUpdateJob()
-          { Config = Config,
-            Spline = new NativeSpline(Spline.Spline, Allocator.TempJob),
-            Root = transform.localToWorldMatrix,
-            Time = Time }
-          .Schedule(_pool.Xforms).Complete();
-
-    void OnSplineModified(Spline spline)
-      => UpdateXforms();
+      => new SweepUpdateJob()
+           { Config = Config, Time = Time, Root = transform.localToWorldMatrix }
+           .Schedule(_pool.Xforms).Complete();
 
     #endregion
 
@@ -53,18 +42,14 @@ public sealed class ChainRenderer
     public void OnControlTimeStop() {}
     public void SetTime(double time) => Time = (float)time;
     public void GatherProperties(PlayableDirector dir, IPropertyCollector drv)
-      => drv.AddFromName<ChainRenderer>(gameObject, "<Time>k__BackingField");
+      => drv.AddFromName<SweepRenderer>(gameObject, "<Time>k__BackingField");
 
     #endregion
 
     #region MonoBehaviour implementation
 
-    void OnEnable()
-      => SplineObserver.OnModified += OnSplineModified;
-
     void OnDisable()
     {
-        SplineObserver.OnModified -= OnSplineModified;
         _pool?.Dispose();
         _pool = null;
     }
