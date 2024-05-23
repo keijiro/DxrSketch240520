@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Collections;
+using Unity.Jobs;
 using Unity.Mathematics;
 
 namespace Sketch {
@@ -19,8 +20,8 @@ public interface IMeshBuilder
     public int VertexPerInstance { get; }
     public int IndexPerInstance { get; }
     public Bounds BoundingBox { get; }
-    public void WriteVertexArray(int instanceIndex, NativeSlice<Vertex> array);
-    public void WriteIndexArray(int instanceIndex, NativeSlice<uint> array, uint indexOffset);
+    public JobHandle ScheduleWriteVertexArrayJob(int instanceIndex, NativeSlice<Vertex> array);
+    public JobHandle ScheduleWriteIndexArrayJob(int instanceIndex, NativeSlice<uint> array, uint indexOffset);
 }
 
 public static class IMeshBuilderExtensions

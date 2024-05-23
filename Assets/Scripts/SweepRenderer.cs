@@ -18,9 +18,6 @@ public sealed class SweepRenderer : MonoBehaviour
 
     #region MonoBehaviour implementation
 
-    void OnValidate()
-       => Mesh?.Clear();
-
     void OnDestroy()
        => TearDownMesh();
 
@@ -30,7 +27,7 @@ public sealed class SweepRenderer : MonoBehaviour
 
         using (var varray = CreateVertexArray())
         {
-            if (Mesh.vertexCount == 0)
+            if (Mesh.vertexCount != Builder.GetTotalVertexCount())
                 InitializeMesh(varray);
             else
                 UpdateVertexBuffer(varray);
@@ -87,6 +84,8 @@ public sealed class SweepRenderer : MonoBehaviour
 
     void InitializeMesh(NativeArray<Vertex> varray)
     {
+        _mesh.Clear();
+
         var attr_p = new VertexAttributeDescriptor
           (VertexAttribute.Position, VertexAttributeFormat.Float32, 3);
 
@@ -114,16 +113,24 @@ public sealed class SweepRenderer : MonoBehaviour
     NativeArray<Vertex> CreateVertexArray()
     {
         var array = new NativeArray<Vertex>(
-            Builder.GetTotalVertexCount(), Allocator.Temp,
+            Builder.GetTotalVertexCount(), Allocator.TempJob,
+            NativeArrayOptions.UninitializedMemory
+        );
+
+        var jobs = new NativeArray<JobHandle>(
+            Builder.InstanceCount, Allocator.Temp,
             NativeArrayOptions.UninitializedMemory
         );
 
         for (var (i, count) = (0, 0); i < Builder.InstanceCount; i++)
         {
             var slice = new NativeSlice<Vertex>(array, count, Builder.VertexPerInstance);
-            Builder.WriteVertexArray(i, slice);
+            jobs[i] = Builder.ScheduleWriteVertexArrayJob(i, slice);
             count += Builder.VertexPerInstance;
         }
+
+        JobHandle.CompleteAll(jobs);
+        jobs.Dispose();
 
         return array;
     }
@@ -131,7 +138,12 @@ public sealed class SweepRenderer : MonoBehaviour
     NativeArray<uint> CreateIndexArray()
     {
         var array = new NativeArray<uint>(
-            Builder.GetTotalIndexCount(), Allocator.Temp,
+            Builder.GetTotalIndexCount(), Allocator.TempJob,
+            NativeArrayOptions.UninitializedMemory
+        );
+
+        var jobs = new NativeArray<JobHandle>(
+            Builder.InstanceCount, Allocator.Temp,
             NativeArrayOptions.UninitializedMemory
         );
 
@@ -139,30 +151,18 @@ public sealed class SweepRenderer : MonoBehaviour
         for (var (i, count) = (0, 0); i < Builder.InstanceCount; i++)
         {
             var slice = new NativeSlice<uint>(array, count, Builder.IndexPerInstance);
-            Builder.WriteIndexArray(i, slice, offs);
+            jobs[i] = Builder.ScheduleWriteIndexArrayJob(i, slice, offs);
             offs += (uint)Builder.VertexPerInstance;
             count += Builder.IndexPerInstance;
         }
+
+        JobHandle.CompleteAll(jobs);
+        jobs.Dispose();
 
         return array;
     }
 
     #endregion
 }
-
-/*
-[Unity.Burst.BurstCompile(CompileSynchronously = true)]
-struct ArcBuilderJob : IJobParallelFor
-{
-    [ReadOnly] public SweepConfig Config;
-
-    [WriteOnly] public NativeSlice<uint> ISlice;
-    [WriteOnly] public NativeSlice<float3> VSlice;
-
-    public void Execute(int i)
-    {
-    }
-}
-*/
 
 } // namespace Sketch
