@@ -116,22 +116,7 @@ public sealed class SweepRenderer : MonoBehaviour
             Builder.GetTotalVertexCount(), Allocator.TempJob,
             NativeArrayOptions.UninitializedMemory
         );
-
-        var jobs = new NativeArray<JobHandle>(
-            Builder.InstanceCount, Allocator.Temp,
-            NativeArrayOptions.UninitializedMemory
-        );
-
-        for (var (i, count) = (0, 0); i < Builder.InstanceCount; i++)
-        {
-            var slice = new NativeSlice<Vertex>(array, count, Builder.VertexPerInstance);
-            jobs[i] = Builder.ScheduleWriteVertexArrayJob(i, slice);
-            count += Builder.VertexPerInstance;
-        }
-
-        JobHandle.CompleteAll(jobs);
-        jobs.Dispose();
-
+        Builder.ScheduleWriteVertexArrayJob(array).Complete();
         return array;
     }
 
@@ -141,24 +126,7 @@ public sealed class SweepRenderer : MonoBehaviour
             Builder.GetTotalIndexCount(), Allocator.TempJob,
             NativeArrayOptions.UninitializedMemory
         );
-
-        var jobs = new NativeArray<JobHandle>(
-            Builder.InstanceCount, Allocator.Temp,
-            NativeArrayOptions.UninitializedMemory
-        );
-
-        var offs = 0u;
-        for (var (i, count) = (0, 0); i < Builder.InstanceCount; i++)
-        {
-            var slice = new NativeSlice<uint>(array, count, Builder.IndexPerInstance);
-            jobs[i] = Builder.ScheduleWriteIndexArrayJob(i, slice, offs);
-            offs += (uint)Builder.VertexPerInstance;
-            count += Builder.IndexPerInstance;
-        }
-
-        JobHandle.CompleteAll(jobs);
-        jobs.Dispose();
-
+        Builder.ScheduleWriteIndexArrayJob(array).Complete();
         return array;
     }
 

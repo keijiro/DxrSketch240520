@@ -20,8 +20,8 @@ public interface IMeshBuilder
     public int VertexPerInstance { get; }
     public int IndexPerInstance { get; }
     public Bounds BoundingBox { get; }
-    public JobHandle ScheduleWriteVertexArrayJob(int instanceIndex, NativeSlice<Vertex> array);
-    public JobHandle ScheduleWriteIndexArrayJob(int instanceIndex, NativeSlice<uint> array, uint indexOffset);
+    public JobHandle ScheduleWriteVertexArrayJob(NativeArray<Vertex> array);
+    public JobHandle ScheduleWriteIndexArrayJob(NativeArray<uint> array);
 }
 
 public static class IMeshBuilderExtensions

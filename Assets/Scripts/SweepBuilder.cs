@@ -16,6 +16,9 @@ public struct SweepConfig
     public float Radius;
     public uint Seed;
 
+    public int VertexPerInstance => (Subdivision + 1) * 2;
+    public int IndexPerInstance => Subdivision * 6;
+
     public static SweepConfig Default()
       => new SweepConfig()
            { InstanceCount = 512, Subdivision = 64, Radius = 0.5f, Seed = 0xdeadbeefu };
@@ -27,38 +30,34 @@ public sealed class SweepBuilder : MonoBehaviour, IMeshBuilder
     [field:SerializeField] public SweepConfig Config = SweepConfig.Default();
 
     public int InstanceCount => Config.InstanceCount;
-    public int VertexPerInstance => (Config.Subdivision + 1) * 2;
-    public int IndexPerInstance => Config.Subdivision * 6;
-    public Bounds BoundingBox => new Bounds(Vector3.zero, Vector3.one * 100);
+    public int VertexPerInstance => Config.VertexPerInstance;
+    public int IndexPerInstance => Config.IndexPerInstance;
+    public Bounds BoundingBox => new Bounds(Vector3.zero, Vector3.one * Config.Radius);
 
-    public JobHandle ScheduleWriteVertexArrayJob
-      (int instanceIndex, NativeSlice<Vertex> slice)
+    public JobHandle ScheduleWriteVertexArrayJob(NativeArray<Vertex> array)
     {
-        var job = new SweepBuilderVertexJob()
-          { InstanceIndex = instanceIndex, Slice = slice, Config = Config };
-        return job.Schedule();
+        var job = new SweepBuilderVertexJob(){ Config = Config, Array = array };
+        return job.Schedule(InstanceCount, 1);
     }
 
-    public JobHandle ScheduleWriteIndexArrayJob
-      (int instanceIndex, NativeSlice<uint> slice, uint indexOffset)
+    public JobHandle ScheduleWriteIndexArrayJob(NativeArray<uint> array)
     {
-        var job = new SweepBuilderIndexJob()
-          { InstanceIndex = instanceIndex, IndexOffset = indexOffset, Slice = slice, Config = Config };
-        return job.Schedule();
+        var job = new SweepBuilderIndexJob(){ Config = Config, Array = array };
+        return job.Schedule(InstanceCount, 1);
     }
 }
 
 [BurstCompile]
-public struct SweepBuilderVertexJob : IJob
+public struct SweepBuilderVertexJob : IJobParallelFor
 {
-    public int InstanceIndex;
-    [NativeDisableContainerSafetyRestriction]
-    public NativeSlice<Vertex> Slice;
     public SweepConfig Config;
 
-    public void Execute()
+    [NativeDisableContainerSafetyRestriction]
+    public NativeArray<Vertex> Array;
+
+    public void Execute(int index)
     {
-        var rand = Random.CreateFromIndex((uint)InstanceIndex + Config.Seed);
+        var rand = Random.CreateFromIndex((uint)index + Config.Seed);
         rand.NextUInt();
 
         var r1 = Config.Radius * rand.NextFloat();
@@ -70,7 +69,7 @@ public struct SweepBuilderVertexJob : IJob
 
         var normal = math.float3(0, 0, -1);
 
-        var ptr = 0;
+        var ptr = index * Config.VertexPerInstance;
         for (var i = 0; i <= Config.Subdivision; i++)
         {
             var t = theta + i * width / Config.Subdivision;
@@ -78,33 +77,33 @@ public struct SweepBuilderVertexJob : IJob
             var y = math.sin(t);
             var p1 = math.float3(x * r1, y * r1, z);
             var p2 = math.float3(x * r2, y * r2, z);
-            Slice[ptr++] = new Vertex(p1, normal);
-            Slice[ptr++] = new Vertex(p2, normal);
+            Array[ptr++] = new Vertex(p1, normal);
+            Array[ptr++] = new Vertex(p2, normal);
         }
     }
 }
 
 [BurstCompile]
-public struct SweepBuilderIndexJob : IJob
+public struct SweepBuilderIndexJob : IJobParallelFor
 {
-    public int InstanceIndex;
-    public uint IndexOffset;
-    [NativeDisableContainerSafetyRestriction]
-    public NativeSlice<uint> Slice;
     public SweepConfig Config;
 
-    public void Execute()
+    [NativeDisableContainerSafetyRestriction]
+    public NativeArray<uint> Array;
+
+    public void Execute(int index)
     {
-        var ptr = 0;
+        var ptr = index * Config.IndexPerInstance;
+        var indexOffset = index * Config.VertexPerInstance;
         for (var i = 0u; i < Config.Subdivision; i++)
         {
-            var offs = IndexOffset + i * 2;
-            Slice[ptr++] = offs + 0;
-            Slice[ptr++] = offs + 2;
-            Slice[ptr++] = offs + 1;
-            Slice[ptr++] = offs + 2;
-            Slice[ptr++] = offs + 3;
-            Slice[ptr++] = offs + 1;
+            var offs = (uint)indexOffset + i * 2;
+            Array[ptr++] = offs + 0;
+            Array[ptr++] = offs + 2;
+            Array[ptr++] = offs + 1;
+            Array[ptr++] = offs + 2;
+            Array[ptr++] = offs + 3;
+            Array[ptr++] = offs + 1;
         }
     }
 }
