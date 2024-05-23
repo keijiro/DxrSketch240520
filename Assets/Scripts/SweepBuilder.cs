@@ -56,12 +56,10 @@ public sealed class SweepBuilder : MonoBehaviour, IMeshBuilder
     public Bounds BoundingBox => new Bounds(Vector3.zero, Vector3.one * Config.Radius * 2);
 
     public JobHandle ScheduleVertexJob(NativeArray<Vertex> output)
-      => new SweepBuilderVertexJob() { Config = Config, Output = output }
-           .Schedule(Config.InstanceCount, 1);
+      => SweepBuilderVertexJob.Schedule(Config, output);
 
-    public JobHandle ScheduleIndexJob(NativeArray<int> output)
-      => new SweepBuilderIndexJob(){ Config = Config, Output = output }
-           .Schedule(Config.InstanceCount, 1);
+    public JobHandle ScheduleIndexJob(NativeArray<uint> output)
+      => SweepBuilderIndexJob.Schedule(Config, output);
 
     #endregion
 }
@@ -73,6 +71,12 @@ public struct SweepBuilderVertexJob : IJobParallelFor
 
     [NativeDisableContainerSafetyRestriction]
     public NativeArray<Vertex> Output;
+
+    public static JobHandle Schedule
+      (in SweepConfig config, NativeArray<Vertex> output)
+      => new SweepBuilderVertexJob()
+           { Config = config, Output = output }
+           .Schedule(config.InstanceCount, 1);
 
     public void Execute(int index)
     {
@@ -108,12 +112,18 @@ public struct SweepBuilderIndexJob : IJobParallelFor
     public SweepConfig Config;
 
     [NativeDisableContainerSafetyRestriction]
-    public NativeArray<int> Output;
+    public NativeArray<uint> Output;
+
+    public static JobHandle Schedule
+      (in SweepConfig config, NativeArray<uint> output)
+      => new SweepBuilderIndexJob()
+           { Config = config, Output = output }
+           .Schedule(config.InstanceCount, 1);
 
     public void Execute(int index)
     {
         var wp = index * Config.IndexPerInstance;
-        var rp = index * Config.VertexPerInstance;
+        var rp = (uint)(index * Config.VertexPerInstance);
         for (var i = 0u; i < Config.Subdivision; i++, rp += 2)
         {
             Output[wp++] = rp + 0;

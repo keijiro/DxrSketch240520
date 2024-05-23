@@ -20,7 +20,7 @@ public interface IMeshBuilder
     public int IndexCount { get; }
     public Bounds BoundingBox { get; }
     public JobHandle ScheduleVertexJob(NativeArray<Vertex> array);
-    public JobHandle ScheduleIndexJob(NativeArray<int> array);
+    public JobHandle ScheduleIndexJob(NativeArray<uint> array);
 }
 
 } // namespace Sketch

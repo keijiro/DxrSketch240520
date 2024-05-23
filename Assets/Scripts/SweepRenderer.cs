@@ -108,9 +108,9 @@ public sealed class SweepRenderer : MonoBehaviour
         return array;
     }
 
-    NativeArray<int> CreateIndexArray()
+    NativeArray<uint> CreateIndexArray()
     {
-        var array = SketchUtils.NewTempJobArray<int>(BuilderComponent.IndexCount);
+        var array = SketchUtils.NewTempJobArray<uint>(BuilderComponent.IndexCount);
         BuilderComponent.ScheduleIndexJob(array).Complete();
         return array;
     }
