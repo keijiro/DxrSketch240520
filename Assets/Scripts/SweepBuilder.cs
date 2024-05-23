@@ -11,40 +11,59 @@ namespace Sketch {
 [System.Serializable]
 public struct SweepConfig
 {
+    #region Editable members
+
     public int InstanceCount;
     public int Subdivision;
     public float Radius;
     public uint Seed;
 
+    #endregion
+
+    #region Helper properties
+
     public int VertexPerInstance => (Subdivision + 1) * 2;
     public int IndexPerInstance => Subdivision * 6;
 
+    #endregion
+
+    #region Default constructor
+
     public static SweepConfig Default()
       => new SweepConfig()
-           { InstanceCount = 512, Subdivision = 64, Radius = 0.5f, Seed = 0xdeadbeefu };
+           { InstanceCount = 512,
+             Subdivision = 64,
+             Radius = 0.5f,
+             Seed = 0xdeadbeef };
+
+    #endregion
 }
 
 [ExecuteInEditMode]
 public sealed class SweepBuilder : MonoBehaviour, IMeshBuilder
 {
-    [field:SerializeField] public SweepConfig Config = SweepConfig.Default();
+    #region Editable properties
 
-    public int InstanceCount => Config.InstanceCount;
-    public int VertexPerInstance => Config.VertexPerInstance;
-    public int IndexPerInstance => Config.IndexPerInstance;
-    public Bounds BoundingBox => new Bounds(Vector3.zero, Vector3.one * Config.Radius);
+    [field:SerializeField]
+    public SweepConfig Config = SweepConfig.Default();
 
-    public JobHandle ScheduleWriteVertexArrayJob(NativeArray<Vertex> array)
-    {
-        var job = new SweepBuilderVertexJob(){ Config = Config, Array = array };
-        return job.Schedule(InstanceCount, 1);
-    }
+    #endregion
 
-    public JobHandle ScheduleWriteIndexArrayJob(NativeArray<uint> array)
-    {
-        var job = new SweepBuilderIndexJob(){ Config = Config, Array = array };
-        return job.Schedule(InstanceCount, 1);
-    }
+    #region IMeshBuilder implementation
+
+    public int VertexCount => Config.InstanceCount * Config.VertexPerInstance;
+    public int IndexCount => Config.InstanceCount * Config.IndexPerInstance;
+    public Bounds BoundingBox => new Bounds(Vector3.zero, Vector3.one * Config.Radius * 2);
+
+    public JobHandle ScheduleVertexJob(NativeArray<Vertex> output)
+      => new SweepBuilderVertexJob() { Config = Config, Output = output }
+           .Schedule(Config.InstanceCount, 1);
+
+    public JobHandle ScheduleIndexJob(NativeArray<int> output)
+      => new SweepBuilderIndexJob(){ Config = Config, Output = output }
+           .Schedule(Config.InstanceCount, 1);
+
+    #endregion
 }
 
 [BurstCompile]
@@ -53,7 +72,7 @@ public struct SweepBuilderVertexJob : IJobParallelFor
     public SweepConfig Config;
 
     [NativeDisableContainerSafetyRestriction]
-    public NativeArray<Vertex> Array;
+    public NativeArray<Vertex> Output;
 
     public void Execute(int index)
     {
@@ -69,7 +88,7 @@ public struct SweepBuilderVertexJob : IJobParallelFor
 
         var normal = math.float3(0, 0, -1);
 
-        var ptr = index * Config.VertexPerInstance;
+        var wp = index * Config.VertexPerInstance;
         for (var i = 0; i <= Config.Subdivision; i++)
         {
             var t = theta + i * width / Config.Subdivision;
@@ -77,8 +96,8 @@ public struct SweepBuilderVertexJob : IJobParallelFor
             var y = math.sin(t);
             var p1 = math.float3(x * r1, y * r1, z);
             var p2 = math.float3(x * r2, y * r2, z);
-            Array[ptr++] = new Vertex(p1, normal);
-            Array[ptr++] = new Vertex(p2, normal);
+            Output[wp++] = new Vertex(p1, normal);
+            Output[wp++] = new Vertex(p2, normal);
         }
     }
 }
@@ -89,21 +108,20 @@ public struct SweepBuilderIndexJob : IJobParallelFor
     public SweepConfig Config;
 
     [NativeDisableContainerSafetyRestriction]
-    public NativeArray<uint> Array;
+    public NativeArray<int> Output;
 
     public void Execute(int index)
     {
-        var ptr = index * Config.IndexPerInstance;
-        var indexOffset = index * Config.VertexPerInstance;
-        for (var i = 0u; i < Config.Subdivision; i++)
+        var wp = index * Config.IndexPerInstance;
+        var rp = index * Config.VertexPerInstance;
+        for (var i = 0u; i < Config.Subdivision; i++, rp += 2)
         {
-            var offs = (uint)indexOffset + i * 2;
-            Array[ptr++] = offs + 0;
-            Array[ptr++] = offs + 2;
-            Array[ptr++] = offs + 1;
-            Array[ptr++] = offs + 2;
-            Array[ptr++] = offs + 3;
-            Array[ptr++] = offs + 1;
+            Output[wp++] = rp + 0;
+            Output[wp++] = rp + 2;
+            Output[wp++] = rp + 1;
+            Output[wp++] = rp + 2;
+            Output[wp++] = rp + 3;
+            Output[wp++] = rp + 1;
         }
     }
 }

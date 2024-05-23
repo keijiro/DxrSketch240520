@@ -16,21 +16,11 @@ public struct Vertex
 
 public interface IMeshBuilder
 {
-    public int InstanceCount { get; }
-    public int VertexPerInstance { get; }
-    public int IndexPerInstance { get; }
+    public int VertexCount { get; }
+    public int IndexCount { get; }
     public Bounds BoundingBox { get; }
-    public JobHandle ScheduleWriteVertexArrayJob(NativeArray<Vertex> array);
-    public JobHandle ScheduleWriteIndexArrayJob(NativeArray<uint> array);
-}
-
-public static class IMeshBuilderExtensions
-{
-    public static int GetTotalVertexCount(this IMeshBuilder self)
-      => self.InstanceCount * self.VertexPerInstance;
-
-    public static int GetTotalIndexCount(this IMeshBuilder self)
-      => self.InstanceCount * self.IndexPerInstance;
+    public JobHandle ScheduleVertexJob(NativeArray<Vertex> array);
+    public JobHandle ScheduleIndexJob(NativeArray<int> array);
 }
 
 } // namespace Sketch
