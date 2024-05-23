@@ -6,85 +6,84 @@ using Unity.Mathematics;
 
 namespace Sketch {
 
-[System.Serializable]
-public struct SweepConfig
-{
-    public float Radius;
-    public uint ArcCount;
-    public uint Subdivision;
-    public uint Seed;
-
-    public uint CalculatedIndexCount
-      => ArcCount * Subdivision * 3 * 2;
-
-    public uint CalculatedVertexCount
-      => ArcCount * (Subdivision + 1) * 2;
-
-    public static SweepConfig Default()
-      => new SweepConfig()
-        { Subdivision = 64,
-          Seed = 1 };
-}
-
-[ExecuteInEditMode, RequireComponent(typeof(MeshRenderer))]
+[ExecuteInEditMode]
 public sealed class SweepRenderer : MonoBehaviour
 {
     #region Editable properties
 
-    [field:SerializeField] SweepConfig Config = SweepConfig.Default();
-
-    #endregion
-
-    #region Private objects
-
-    Mesh _mesh;
+    [field:SerializeField]
+    public Material Material { get; set; }
 
     #endregion
 
     #region MonoBehaviour implementation
 
     void OnValidate()
-      => _mesh.Clear();
+       => Mesh?.Clear();
 
     void OnDestroy()
-    {
-        CoreUtils.Destroy(_mesh);
-        _mesh = null;
-    }
+       => TearDownMesh();
 
     void Update()
     {
-        if (_mesh == null) SetUpMeshFilter();
+        if (Mesh == null) SetUpMesh();
 
         using (var varray = CreateVertexArray())
         {
-            if (_mesh.subMeshCount == 0)
+            if (Mesh.vertexCount == 0)
                 InitializeMesh(varray);
             else
                 UpdateVertexBuffer(varray);
         }
 
-        _mesh.bounds = new Bounds(Vector3.zero, Vector3.one * Config.Radius);
+        Mesh.bounds = Builder.BoundingBox;
+        Renderer.sharedMaterial = Material;
     }
 
     #endregion
 
-    #region Mesh object handlers
+    #region Helper properties
 
-    void SetUpMeshFilter()
+    T GetLiveComponent<T>() where T : class
+    {
+        var c = GetComponent<T>();
+        return c != null ? c : null;
+    }
+
+    Mesh Mesh => _mesh != null ? _mesh : null;
+    MeshFilter Filter => GetLiveComponent<MeshFilter>();
+    MeshRenderer Renderer => GetLiveComponent<MeshRenderer>();
+    IMeshBuilder Builder => GetLiveComponent<IMeshBuilder>();
+
+    #endregion
+
+    #region Mesh object and companion components
+
+    Mesh _mesh;
+
+    void SetUpMesh()
     {
         _mesh = new Mesh();
         _mesh.hideFlags = HideFlags.DontSave;
 
-        var mf = GetComponent<MeshFilter>();
-        if (mf == null)
-        {
-            mf = gameObject.AddComponent<MeshFilter>();
-            mf.hideFlags = HideFlags.NotEditable | HideFlags.DontSave;
-        }
-
+        var mf = gameObject.AddComponent<MeshFilter>();
+        mf.hideFlags = HideFlags.NotEditable | HideFlags.DontSave;
         mf.sharedMesh = _mesh;
+
+        var mr = gameObject.AddComponent<MeshRenderer>();
+        mr.hideFlags = HideFlags.NotEditable | HideFlags.DontSave;
     }
+
+    void TearDownMesh()
+    {
+        CoreUtils.Destroy(Mesh);
+        CoreUtils.Destroy(Filter);
+        CoreUtils.Destroy(Renderer);
+    }
+
+    #endregion
+
+    #region Mesh builder
 
     void InitializeMesh(NativeArray<Vertex> varray)
     {
@@ -94,15 +93,15 @@ public sealed class SweepRenderer : MonoBehaviour
         var attr_n = new VertexAttributeDescriptor
           (VertexAttribute.Normal, VertexAttributeFormat.Float32, 3);
 
-        var icount = (int)Config.CalculatedIndexCount;
-        var vcount = (int)Config.CalculatedVertexCount;
+        var vcount = Builder.GetTotalVertexCount();
+        var icount = Builder.GetTotalIndexCount();
 
         _mesh.SetVertexBufferParams(vcount, attr_p, attr_n);
         _mesh.SetVertexBufferData(varray, 0, 0, vcount);
 
         using (var iarray = CreateIndexArray())
         {
-            _mesh.SetIndexBufferParams(vcount, IndexFormat.UInt32);
+            _mesh.SetIndexBufferParams(icount, IndexFormat.UInt32);
             _mesh.SetIndexBufferData(iarray, 0, 0, icount);
         }
 
@@ -110,48 +109,48 @@ public sealed class SweepRenderer : MonoBehaviour
     }
 
     void UpdateVertexBuffer(NativeArray<Vertex> varray)
-      => _mesh.SetVertexBufferData(varray, 0, 0, varray.Length);
-
-    #endregion
-
-    #region Index array operations
-
-    NativeArray<uint> CreateIndexArray(int length)
-    {
-        var buffer = new NativeArray<uint>(
-            length, Allocator.Temp,
-            NativeArrayOptions.UninitializedMemory
-        );
-
-        for (var i = 0; i < length; i++) buffer[i] = (uint)i;
-
-        return buffer;
-    }
-
-    #endregion
-
-    #region Mesh object operations
-
-    struct Vertex
-    {
-        public float3 position;
-        public float3 normal;
-    }
+      => _mesh.SetVertexBufferData(varray, 0, 0, Builder.GetTotalVertexCount());
 
     NativeArray<Vertex> CreateVertexArray()
     {
-        return new NativeArray<Vertex>(
-            8, Allocator.Temp,
-            NativeArrayOptions.UninitializedMemory);
+        var array = new NativeArray<Vertex>(
+            Builder.GetTotalVertexCount(), Allocator.Temp,
+            NativeArrayOptions.UninitializedMemory
+        );
+
+        for (var (i, count) = (0, 0); i < Builder.InstanceCount; i++)
+        {
+            var slice = new NativeSlice<Vertex>(array, count, Builder.VertexPerInstance);
+            Builder.WriteVertexArray(i, slice);
+            count += Builder.VertexPerInstance;
+        }
+
+        return array;
     }
 
-    void UpdateVerticesOnMesh(NativeArray<Vertex> vertexArray)
+    NativeArray<uint> CreateIndexArray()
     {
+        var array = new NativeArray<uint>(
+            Builder.GetTotalIndexCount(), Allocator.Temp,
+            NativeArrayOptions.UninitializedMemory
+        );
+
+        var offs = 0u;
+        for (var (i, count) = (0, 0); i < Builder.InstanceCount; i++)
+        {
+            var slice = new NativeSlice<uint>(array, count, Builder.IndexPerInstance);
+            Builder.WriteIndexArray(i, slice, offs);
+            offs += (uint)Builder.VertexPerInstance;
+            count += Builder.IndexPerInstance;
+        }
+
+        return array;
     }
 
     #endregion
 }
 
+/*
 [Unity.Burst.BurstCompile(CompileSynchronously = true)]
 struct ArcBuilderJob : IJobParallelFor
 {
@@ -164,5 +163,6 @@ struct ArcBuilderJob : IJobParallelFor
     {
     }
 }
+*/
 
 } // namespace Sketch
