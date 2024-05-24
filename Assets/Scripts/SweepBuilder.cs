@@ -15,7 +15,11 @@ public struct SweepConfig
 
     public int InstanceCount;
     public int Subdivision;
-    public float Radius;
+    public float2 BaseAngle;
+    public float2 SweepAngle;
+    public float2 Radius;
+    public float2 Width;
+    public float Depth;
     public uint Seed;
 
     #endregion
@@ -25,6 +29,14 @@ public struct SweepConfig
     public int VertexPerInstance => (Subdivision + 1) * 2;
     public int IndexPerInstance => Subdivision * 6;
 
+    public int TotalVertexCount => InstanceCount * VertexPerInstance;
+    public int TotalIndexCount => InstanceCount * IndexPerInstance;
+
+    public Bounds BoundingBox
+      => new Bounds(Vector3.zero,
+                    math.float3(1, 1, 0) * Radius.y +
+                    math.float3(0, 0, 1) * Depth);
+
     #endregion
 
     #region Default constructor
@@ -33,33 +45,12 @@ public struct SweepConfig
       => new SweepConfig()
            { InstanceCount = 512,
              Subdivision = 64,
-             Radius = 0.5f,
+             BaseAngle = math.float2(-math.PI, math.PI),
+             SweepAngle = math.float2(0.3f, 1.0f),
+             Radius = math.float2(0.2f, 0.8f),
+             Width = math.float2(0.1f, 0.2f),
+             Depth = 0.1f,
              Seed = 0xdeadbeef };
-
-    #endregion
-}
-
-[ExecuteInEditMode]
-public sealed class SweepBuilder : MonoBehaviour, IMeshBuilder
-{
-    #region Editable properties
-
-    [field:SerializeField]
-    public SweepConfig Config = SweepConfig.Default();
-
-    #endregion
-
-    #region IMeshBuilder implementation
-
-    public int VertexCount => Config.InstanceCount * Config.VertexPerInstance;
-    public int IndexCount => Config.InstanceCount * Config.IndexPerInstance;
-    public Bounds BoundingBox => new Bounds(Vector3.zero, Vector3.one * Config.Radius * 2);
-
-    public JobHandle ScheduleVertexJob(NativeArray<Vertex> output)
-      => SweepBuilderVertexJob.Schedule(Config, output);
-
-    public JobHandle ScheduleIndexJob(NativeArray<uint> output)
-      => SweepBuilderIndexJob.Schedule(Config, output);
 
     #endregion
 }
@@ -80,26 +71,28 @@ public struct SweepBuilderVertexJob : IJobParallelFor
 
     public void Execute(int index)
     {
-        var rand = Random.CreateFromIndex((uint)index + Config.Seed);
-        rand.NextUInt();
+        ref var C = ref Config;
 
-        var r1 = Config.Radius * rand.NextFloat();
-        var r2 = Config.Radius * rand.NextFloat(0.1f) + r1;
+        var R = Random.CreateFromIndex((uint)index + C.Seed);
+        R.NextUInt();
 
-        var theta = rand.NextFloat(math.PI * 2);
-        var width = rand.NextFloat(0.4f, 1.0f);
-        var z = rand.NextFloat(-0.2f, 0.2f);
+        var radius = R.RangeXY(C.Radius);
+        var width = R.RangeXY(C.Width) / 2;
+        var angle = R.RangeXY(C.BaseAngle);
+        var sweep = R.RangeXY(C.SweepAngle);
+        var z = R.SNorm() * C.Depth;
 
         var normal = math.float3(0, 0, -1);
+        var rsub = 1.0f / C.Subdivision;
 
-        var wp = index * Config.VertexPerInstance;
-        for (var i = 0; i <= Config.Subdivision; i++)
+        var wp = index * C.VertexPerInstance;
+        for (var i = 0; i <= C.Subdivision; i++)
         {
-            var t = theta + i * width / Config.Subdivision;
-            var x = math.cos(t);
-            var y = math.sin(t);
-            var p1 = math.float3(x * r1, y * r1, z);
-            var p2 = math.float3(x * r2, y * r2, z);
+            var param = i * rsub;
+            var theta = angle + sweep * (param - 0.5f);
+            var xy = math.float2(math.cos(theta), math.sin(theta));
+            var p1 = math.float3(xy * (radius - width), z);
+            var p2 = math.float3(xy * (radius + width), z);
             Output[wp++] = new Vertex(p1, normal);
             Output[wp++] = new Vertex(p2, normal);
         }
@@ -134,6 +127,31 @@ public struct SweepBuilderIndexJob : IJobParallelFor
             Output[wp++] = rp + 1;
         }
     }
+}
+
+[ExecuteInEditMode]
+public sealed class SweepBuilder : MonoBehaviour, IMeshBuilder
+{
+    #region Editable properties
+
+    [field:SerializeField]
+    public SweepConfig Config = SweepConfig.Default();
+
+    #endregion
+
+    #region IMeshBuilder implementation
+
+    public int VertexCount => Config.TotalVertexCount;
+    public int IndexCount => Config.TotalIndexCount;
+    public Bounds BoundingBox => Config.BoundingBox;
+
+    public JobHandle ScheduleVertexJob(NativeArray<Vertex> output)
+      => SweepBuilderVertexJob.Schedule(Config, output);
+
+    public JobHandle ScheduleIndexJob(NativeArray<uint> output)
+      => SweepBuilderIndexJob.Schedule(Config, output);
+
+    #endregion
 }
 
 } // namespace Sketch

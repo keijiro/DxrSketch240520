@@ -151,7 +151,19 @@ MonoBehaviour:
   Config:
     InstanceCount: 512
     Subdivision: 64
-    Radius: 0.6
+    BaseAngle:
+      x: -3.1415927
+      y: 3.1415927
+    SweepAngle:
+      x: 0.39
+      y: 0.44
+    Radius:
+      x: 0.2
+      y: 1
+    Width:
+      x: 0.07
+      y: 0.03
+    Depth: 0.1
     Seed: 3734311695
 --- !u!4 &20633187
 Transform:
