@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using Unity.Collections;
 using Unity.Jobs;
@@ -63,6 +64,7 @@ public sealed class SweepRenderer : MonoBehaviour
 
         var mr = gameObject.AddComponent<MeshRenderer>();
         mr.hideFlags = HideFlags.HideInInspector | HideFlags.DontSave;
+        mr.rayTracingMode = RayTracingMode.DynamicGeometry;
     }
 
     void TearDownAssociatedObjects()
