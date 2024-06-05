@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.Playables;
 using UnityEngine.Rendering;
+using UnityEngine.Timeline;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -8,12 +10,36 @@ using Unity.Mathematics;
 namespace Sketch {
 
 [ExecuteInEditMode]
-public sealed class FixedMeshRenderer : MonoBehaviour
+public sealed class FixedMeshRenderer : MonoBehaviour, ITimeControl, IPropertyPreview
 {
     #region Editable properties
 
     [field:SerializeField]
     public Material Material { get; set; }
+
+    [field:SerializeField]
+    public float Time { get; set; }
+
+    #endregion
+
+    #region Associated objects
+
+    Mesh _mesh;
+    Mesh OwnedMesh => _mesh != null ? _mesh : null;
+
+    MeshFilter FilterComponent => this.GetLiveComponent<MeshFilter>();
+    MeshRenderer RendererComponent => this.GetLiveComponent<MeshRenderer>();
+    IFixedMeshBuilder BuilderComponent => this.GetLiveComponent<IFixedMeshBuilder>();
+
+    #endregion
+
+    #region ITimeControl / IPropertyPreview implementation
+
+    public void OnControlTimeStart() {}
+    public void OnControlTimeStop() {}
+    public void SetTime(double time) => Time = (float)time;
+    public void GatherProperties(PlayableDirector dir, IPropertyCollector drv)
+      => drv.AddFromName<FixedMeshRenderer>(gameObject, "<Time>k__BackingField");
 
     #endregion
 
@@ -22,7 +48,7 @@ public sealed class FixedMeshRenderer : MonoBehaviour
     void OnDestroy()
        => TearDownAssociatedObjects();
 
-    void Update()
+    void LateUpdate()
     {
         if (OwnedMesh == null) SetUpAssociatedObjects();
 
@@ -37,17 +63,6 @@ public sealed class FixedMeshRenderer : MonoBehaviour
         OwnedMesh.bounds = BuilderComponent.BoundingBox;
         RendererComponent.sharedMaterial = Material;
     }
-
-    #endregion
-
-    #region Associated object referencing properties
-
-    Mesh _mesh;
-    Mesh OwnedMesh => _mesh != null ? _mesh : null;
-
-    MeshFilter FilterComponent => this.GetLiveComponent<MeshFilter>();
-    MeshRenderer RendererComponent => this.GetLiveComponent<MeshRenderer>();
-    IFixedMeshBuilder BuilderComponent => this.GetLiveComponent<IFixedMeshBuilder>();
 
     #endregion
 
