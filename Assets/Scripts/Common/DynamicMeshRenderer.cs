@@ -10,7 +10,7 @@ using Unity.Mathematics;
 namespace Sketch {
 
 [ExecuteInEditMode]
-public sealed class FixedMeshRenderer : MonoBehaviour, ITimeControl, IPropertyPreview
+public sealed class DynamicMeshRenderer : MonoBehaviour, ITimeControl, IPropertyPreview
 {
     #region Editable properties
 
@@ -29,7 +29,7 @@ public sealed class FixedMeshRenderer : MonoBehaviour, ITimeControl, IPropertyPr
 
     MeshFilter FilterComponent => this.GetLiveComponent<MeshFilter>();
     MeshRenderer RendererComponent => this.GetLiveComponent<MeshRenderer>();
-    IFixedMeshBuilder BuilderComponent => this.GetLiveComponent<IFixedMeshBuilder>();
+    IMeshBuilder BuilderComponent => this.GetLiveComponent<IMeshBuilder>();
 
     #endregion
 
@@ -39,7 +39,7 @@ public sealed class FixedMeshRenderer : MonoBehaviour, ITimeControl, IPropertyPr
     public void OnControlTimeStop() {}
     public void SetTime(double time) => Time = (float)time;
     public void GatherProperties(PlayableDirector dir, IPropertyCollector drv)
-      => drv.AddFromName<FixedMeshRenderer>(gameObject, "<Time>k__BackingField");
+      => drv.AddFromName<DynamicMeshRenderer>(gameObject, "<Time>k__BackingField");
 
     #endregion
 
