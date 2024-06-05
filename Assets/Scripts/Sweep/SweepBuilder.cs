@@ -214,7 +214,7 @@ public struct SweepBuilderIndexJob : IJobParallelFor
 }
 
 [ExecuteInEditMode]
-public sealed class SweepBuilder : MonoBehaviour, IFixedTopologyMeshBuilder
+public sealed class SweepBuilder : MonoBehaviour, IFixedMeshBuilder
 {
     #region Editable properties
 
@@ -223,7 +223,7 @@ public sealed class SweepBuilder : MonoBehaviour, IFixedTopologyMeshBuilder
 
     #endregion
 
-    #region IMeshBuilder implementation
+    #region IFixedMeshBuilder implementation
 
     public int VertexCount => Config.TotalVertexCount;
     public int IndexCount => Config.TotalIndexCount;
