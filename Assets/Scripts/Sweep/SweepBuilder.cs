@@ -214,7 +214,7 @@ public struct SweepBuilderIndexJob : IJobParallelFor
 }
 
 [ExecuteInEditMode]
-public sealed class SweepBuilder : MonoBehaviour, IMeshBuilder
+public sealed class SweepBuilder : MonoBehaviour, IFixedTopologyMeshBuilder
 {
     #region Editable properties
 

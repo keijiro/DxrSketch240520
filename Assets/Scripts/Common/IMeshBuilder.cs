@@ -14,7 +14,7 @@ public struct Vertex
       => (Position, Normal) = (p, n);
 }
 
-public interface IMeshBuilder
+public interface IFixedTopologyMeshBuilder
 {
     public int VertexCount { get; }
     public int IndexCount { get; }

@@ -8,7 +8,7 @@ using Unity.Mathematics;
 namespace Sketch {
 
 [ExecuteInEditMode]
-public sealed class SweepRenderer : MonoBehaviour
+public sealed class FixedTopologyMeshRenderer : MonoBehaviour
 {
     #region Editable properties
 
@@ -47,7 +47,7 @@ public sealed class SweepRenderer : MonoBehaviour
 
     MeshFilter FilterComponent => this.GetLiveComponent<MeshFilter>();
     MeshRenderer RendererComponent => this.GetLiveComponent<MeshRenderer>();
-    IMeshBuilder BuilderComponent => this.GetLiveComponent<IMeshBuilder>();
+    IFixedTopologyMeshBuilder BuilderComponent => this.GetLiveComponent<IFixedTopologyMeshBuilder>();
 
     #endregion
 
