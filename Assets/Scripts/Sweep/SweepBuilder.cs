@@ -61,14 +61,16 @@ public struct SweepConfig
 public struct SweepBuilderVertexJob : IJobParallelFor
 {
     public SweepConfig Config;
+    public float Time;
 
     [NativeDisableContainerSafetyRestriction]
     public NativeArray<Vertex> Output;
 
-    public static JobHandle Schedule
-      (in SweepConfig config, NativeArray<Vertex> output)
+    public static JobHandle Schedule(in SweepConfig config,
+                                     float time,
+                                     NativeArray<Vertex> output)
       => new SweepBuilderVertexJob()
-           { Config = config, Output = output }
+           { Config = config, Time = time, Output = output }
            .Schedule(config.InstanceCount, 1);
 
     public void Execute(int index)
@@ -81,7 +83,7 @@ public struct SweepBuilderVertexJob : IJobParallelFor
         var radius = R.RangeXY(C.Radius);
         var width = R.RangeXY(C.Width) / 2;
         var angle = R.RangeXY(C.BaseAngle);
-        var sweep = R.RangeXY(C.SweepAngle);
+        var sweep = R.RangeXY(C.SweepAngle) * Time;
         var height = R.RangeXY(C.Height) / 2;
         var disp = R.SNorm() * C.Displace;
         var z1 = disp - height;
@@ -229,10 +231,10 @@ public sealed class SweepBuilder : MonoBehaviour, IMeshBuilder
     public int IndexCount => Config.TotalIndexCount;
     public Bounds BoundingBox => Config.BoundingBox;
 
-    public JobHandle ScheduleVertexJob(NativeArray<Vertex> output)
-      => SweepBuilderVertexJob.Schedule(Config, output);
+    public JobHandle ScheduleVertexJob(float time, NativeArray<Vertex> output)
+      => SweepBuilderVertexJob.Schedule(Config, time, output);
 
-    public JobHandle ScheduleIndexJob(NativeArray<uint> output)
+    public JobHandle ScheduleIndexJob(float time, NativeArray<uint> output)
       => SweepBuilderIndexJob.Schedule(Config, output);
 
     #endregion

@@ -121,14 +121,14 @@ public sealed class DynamicMeshRenderer : MonoBehaviour, ITimeControl, IProperty
     NativeArray<Vertex> CreateVertexArray()
     {
         var array = SketchUtils.NewTempJobArray<Vertex>(BuilderComponent.VertexCount);
-        BuilderComponent.ScheduleVertexJob(array).Complete();
+        BuilderComponent.ScheduleVertexJob(Time, array).Complete();
         return array;
     }
 
     NativeArray<uint> CreateIndexArray()
     {
         var array = SketchUtils.NewTempJobArray<uint>(BuilderComponent.IndexCount);
-        BuilderComponent.ScheduleIndexJob(array).Complete();
+        BuilderComponent.ScheduleIndexJob(Time, array).Complete();
         return array;
     }
 
