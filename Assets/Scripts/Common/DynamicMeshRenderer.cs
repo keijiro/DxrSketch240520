@@ -37,7 +37,13 @@ public sealed class DynamicMeshRenderer : MonoBehaviour, ITimeControl, IProperty
 
     public void OnControlTimeStart() {}
     public void OnControlTimeStop() {}
-    public void SetTime(double time) => Time = (float)time;
+
+    public void SetTime(double time)
+    {
+        Time = (float)time;
+        if (!Application.isPlaying) SketchUtils.ResetPathtracing();
+    }
+
     public void GatherProperties(PlayableDirector dir, IPropertyCollector drv)
       => drv.AddFromName<DynamicMeshRenderer>(gameObject, "<Time>k__BackingField");
 

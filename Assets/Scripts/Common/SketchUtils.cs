@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
 using Unity.Collections;
 using Unity.Mathematics;
 using Random = Unity.Mathematics.Random;
@@ -59,6 +61,12 @@ public static class SketchUtils
 
     public static int RangeXY(ref this Random rand, int2 minmax)
       => rand.NextInt(minmax.x, minmax.y);
+
+    public static void ResetPathtracing()
+    {
+        var hdrp = RenderPipelineManager.currentPipeline as HDRenderPipeline;
+        hdrp?.ResetPathTracing();
+    }
 }
 
 } // namespace Sketch
