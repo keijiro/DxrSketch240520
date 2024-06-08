@@ -21,6 +21,7 @@ public struct SweepConfig
     public float2 Width;
     public float2 Height;
     public float Displace;
+    public Transition Transition;
     public uint Seed;
 
     #endregion
@@ -52,6 +53,7 @@ public struct SweepConfig
              Width = math.float2(0.1f, 0.2f),
              Height = math.float2(0.01f, 0.02f),
              Displace = 0.1f,
+             Transition = Transition.Default(),
              Seed = 0xdeadbeef };
 
     #endregion
@@ -80,10 +82,12 @@ public struct SweepBuilderVertexJob : IJobParallelFor
         var R = Random.CreateFromIndex((uint)index + C.Seed);
         R.NextUInt();
 
+        var (f_in, f_out) = Config.Transition.FadeInOut(Time, R.UNorm());
+
         var radius = R.RangeXY(C.Radius);
         var width = R.RangeXY(C.Width) / 2;
         var angle = R.RangeXY(C.BaseAngle);
-        var sweep = R.RangeXY(C.SweepAngle) * Time;
+        var sweep = R.RangeXY(C.SweepAngle);
         var height = R.RangeXY(C.Height) / 2;
         var disp = R.SNorm() * C.Displace;
         var z1 = disp - height;
@@ -95,6 +99,9 @@ public struct SweepBuilderVertexJob : IJobParallelFor
         var rsub = 1.0f / C.Subdivision;
 
         var wp = index * C.VertexPerInstance;
+
+        (f_in, f_out) = (1 - f_out, 1 - f_in);
+        (angle, sweep) = (angle + sweep * (f_in - 1 + f_out), sweep * (f_in - f_out));
 
         float3 ArcPoint(float t)
           => math.float3(math.cos(t), math.sin(t), 0);

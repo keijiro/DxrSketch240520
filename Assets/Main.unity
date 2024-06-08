@@ -167,6 +167,11 @@ MonoBehaviour:
       x: 0.003
       y: 0.003
     Displace: 0.05
+    Transition:
+      In: 2
+      Stay: 0
+      Out: 2
+      Jitter: 0.5
     Seed: 3735944096
 --- !u!4 &20633187
 Transform:
@@ -196,7 +201,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <Material>k__BackingField: {fileID: 2100000, guid: 415a4d5e338173446b939fb8d1d62401, type: 2}
-  <Time>k__BackingField: 1
+  <Time>k__BackingField: 2
 --- !u!1 &41926894
 GameObject:
   m_ObjectHideFlags: 0
@@ -457,7 +462,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <Material>k__BackingField: {fileID: 2100000, guid: 3eb200a25ac615e4b801b89f4fbc702a, type: 2}
-  <Time>k__BackingField: 1
+  <Time>k__BackingField: 2
 --- !u!114 &379161425
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -489,6 +494,11 @@ MonoBehaviour:
       x: 0.0002
       y: 0.0002
     Displace: 0.01
+    Transition:
+      In: 2
+      Stay: 0
+      Out: 2
+      Jitter: 0.5
     Seed: 53484277
 --- !u!1 &460513881
 GameObject:
@@ -539,6 +549,56 @@ MonoBehaviour:
   blendDistance: 0
   weight: 1
   sharedProfile: {fileID: 11400000, guid: d676bf7332658404598f28b0b48b2baf, type: 2}
+--- !u!1 &626046013
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 626046015}
+  - component: {fileID: 626046014}
+  m_Layer: 0
+  m_Name: TImeline
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!320 &626046014
+PlayableDirector:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 626046013}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_PlayableAsset: {fileID: 11400000, guid: fe9ee9adec218f6478704ffcc1791938, type: 2}
+  m_InitialState: 1
+  m_WrapMode: 2
+  m_DirectorUpdateMode: 1
+  m_InitialTime: 0
+  m_SceneBindings: []
+  m_ExposedReferences:
+    m_References:
+    - ebf4380864eeae54b841f990dcd2d72d: {fileID: 121992459}
+--- !u!4 &626046015
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 626046013}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1275559665
 GameObject:
   m_ObjectHideFlags: 0
@@ -570,7 +630,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <Material>k__BackingField: {fileID: 2100000, guid: 98cc090fd9ab14be3bd39a7eb9ceb7f4, type: 2}
-  <Time>k__BackingField: 1
+  <Time>k__BackingField: 2
 --- !u!114 &1275559667
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -602,6 +662,11 @@ MonoBehaviour:
       x: 0.0002
       y: 0.0002
     Displace: 0.01
+    Transition:
+      In: 2
+      Stay: 0
+      Out: 2
+      Jitter: 0.5
     Seed: 42615102
 --- !u!4 &1275559668
 Transform:
@@ -699,7 +764,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <Material>k__BackingField: {fileID: 2100000, guid: 415a4d5e338173446b939fb8d1d62401, type: 2}
-  <Time>k__BackingField: 1
+  <Time>k__BackingField: 2
 --- !u!114 &1761095489
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -731,6 +796,11 @@ MonoBehaviour:
       x: 0.003
       y: 0.003
     Displace: 0.05
+    Transition:
+      In: 2
+      Stay: 0
+      Out: 2
+      Jitter: 0.5
     Seed: 49489
 --- !u!1 &2116485665
 GameObject:
@@ -959,6 +1029,7 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 626046015}
   - {fileID: 1679301917}
   - {fileID: 219548319}
   - {fileID: 121992460}
