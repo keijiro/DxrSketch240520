@@ -172,6 +172,7 @@ MonoBehaviour:
       Stay: 0
       Out: 2
       Jitter: 0.5
+      Power: 2
     Seed: 3735944096
 --- !u!4 &20633187
 Transform:
@@ -531,6 +532,7 @@ MonoBehaviour:
       Stay: 0
       Out: 2
       Jitter: 0.5
+      Power: 2
     Seed: 53486433
 --- !u!1 &460513881
 GameObject:
@@ -777,6 +779,7 @@ MonoBehaviour:
       Stay: 0
       Out: 2
       Jitter: 0.5
+      Power: 2
     Seed: 42615102
 --- !u!4 &1275559668
 Transform:
@@ -911,6 +914,7 @@ MonoBehaviour:
       Stay: 0
       Out: 2
       Jitter: 0.5
+      Power: 2
     Seed: 49489
 --- !u!1 &2116485665
 GameObject:

@@ -9,22 +9,16 @@ public struct Transition
     public float Stay;
     public float Out;
     public float Jitter;
+    public float Power;
 
     public static Transition Default()
-      => new Transition() { In = 2, Stay = 1, Out = 2, Jitter = 0.5f };
+      => new Transition() { In = 2, Stay = 1, Out = 2, Jitter = 0.5f, Power = 1 };
 
     public (float, float) FadeInOut(float time, float rand01)
     {
-        float Pow(float x)
-        {
-            /*x = x * x;
-            x = x * x;
-            return x * x;*/
-            return x;
-        }
         time -= rand01 * Jitter;
-        return (1 - Pow(1 - math.saturate(time / In)),
-                Pow(math.saturate((time - In - Stay) / Out)));
+        return (1 - math.pow(1 - math.saturate(time / In), Power),
+                math.pow(math.saturate((time - In - Stay) / Out), Power));
     }
 }
 
