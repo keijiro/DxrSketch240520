@@ -36,8 +36,8 @@ public struct SweepConfig
 
     public Bounds BoundingBox
       => new Bounds(Vector3.zero,
-                    math.float3(1, 1, 0) * Radius.y +
-                    math.float3(0, 0, 1) * (Height.y + Displace));
+                    math.float3(2, 2, 0) * (Radius.y + Width.y) +
+                    math.float3(0, 0, 2) * (Height.y + Displace));
 
     #endregion
 
