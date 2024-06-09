@@ -17,9 +17,10 @@ public struct Transition
     {
         float Pow(float x)
         {
+            /*x = x * x;
             x = x * x;
-            x = x * x;
-            return x * x;
+            return x * x;*/
+            return x;
         }
         time -= rand01 * Jitter;
         return (1 - Pow(1 - math.saturate(time / In)),
